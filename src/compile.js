@@ -10,6 +10,8 @@ import {
   encodeID,
   validate,
 } from "./share.js"
+import * as https from "https";
+import * as http from "http";
 
 reserveCodeRange(1000, 1999, "compile");
 messages[1001] = "Node ID %1 not found in pool.";
@@ -19,13 +21,13 @@ messages[1004] = "No visitor method defined for '%1'.";
 
 const transform = (function() {
   const table = {
-    // v1
     "PROG" : program,
     "EXPRS" : exprs,
     "STR": str,
     "NUM": num,
     "IDENT": ident,
     "BOOL": bool,
+    "NULL": nul,
     "LIST": list,
     "RECORD": record,
     "BINDING": binding,
@@ -42,6 +44,7 @@ const transform = (function() {
     "PAREN" : paren,
     "APPLY" : apply,
     "MAP" : map,
+    "GET": get,
   };
   let nodePool;
   let version;
@@ -58,6 +61,24 @@ const transform = (function() {
       str: str,
       nid: nid,
     };
+  }
+  function getData(url, resume) {
+    var req = https.get(url, function(res) {
+      var data = "";
+      res.on('data', function (chunk) {
+        data += chunk;
+      }).on('end', function () {
+        try {
+          resume([], JSON.parse(data));
+        } catch (e) {
+          console.log("ERROR " + data);
+          console.log(e.stack);
+          resume([e], null);
+        }
+      }).on("error", function () {
+        console.log("error() status=" + res.statusCode + " data=" + data);
+      });
+    });
   }
   function visit(nid, options, resume) {
     assert(typeof resume === "function", message(1003));
@@ -90,6 +111,10 @@ const transform = (function() {
     let val = node.elts[0];
     resume([], !!val);
   }
+  function nul(node, options, resume) {
+    let val = null;
+    resume([], val);
+  }
   function concat(node, options, resume) {
     visit(node.elts[0], options, function (err1, val1) {
       let str = "";
@@ -101,6 +126,27 @@ const transform = (function() {
         str = val1.toString();
       }
       resume(err1, str);
+    });
+  }
+  function get(node, options, resume) {
+    visit(node.elts[0], options, function (err1, val1) {
+      let str = "";
+      if (val1 instanceof Array) {
+        val1.forEach(v => {
+          str += v;
+        });
+      } else {
+        str = val1.toString();
+      }
+      getData(str, (err, val) => {
+        resume(err1.concat(err), val);
+      });
+    });
+  }
+  function radial(node, options, resume) {
+    visit(node.elts[0], options, function (err1, val1) {
+      val1.radial = true;
+      resume(err1, val1);
     });
   }
   function paren(node, options, resume) {
@@ -232,13 +278,24 @@ const transform = (function() {
       resume([], []);
     }
   }
+  function isObject(val) {
+    return (
+      val !== null &&
+      typeof val === "object" &&
+      !Array.isArray(val)
+    );
+  }
   function program(node, options, resume) {
     if (!options) {
       options = {};
     }
     visit(node.elts[0], options, function (err, val) {
+      if (isObject(val[0]) && isObject(options.data)) {
+        // If we have two objects, then copy val onto the given object.
+        val = [Object.assign(options.data, val[0])];
+      }
       // Return the value of the last expression.
-      resume(err, val.pop());
+      resume(err, val[val.length-1]);
     });
   }
   function key(node, options, resume) {

@@ -44,6 +44,7 @@ app.get("/compile", function(req, res) {
           data.REFRESH = body.refresh; // Stowaway flag.
           let t0 = new Date;
           let obj = compiler.compile(code, data, function (err, val) {
+            delete val.REFRESH;
             if (err.length) {
               res.send({
                 error: err,

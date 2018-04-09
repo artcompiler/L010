@@ -10,5 +10,6 @@ window.gcexports.globalLexicon = {
     "map" : { "tk": 1, "name": "MAP", "cls": "function", "length": 2, "arity": 2 },
     "apply" : { "tk": 1, "name": "APPLY", "cls": "function", "length": 2, "arity": 2 },
     "in" : { "tk": 1, "name": "IN", "cls": "function", "length": 0, "arity": 0 },
-    "arg" : { "tk": 1, "name": "ARG", "cls": "function", "length": 1, "arity": 1 }
+    "arg" : { "tk": 1, "name": "ARG", "cls": "function", "length": 1, "arity": 1 },
+    "get" : { "tk": 1, "name": "GET", "cls": "function", "length": 1, "arity": 1 }
 }
