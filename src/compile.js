@@ -96,7 +96,6 @@ const transform = (function() {
     } else {
       node = nodePool[nid];
     }
-    console.log("visit() node=" + JSON.stringify(node));
     assert(node, message(1001, [nid]));
     assert(node.tag, message(1001, [nid]));
     assert(typeof table[node.tag] === "function", message(1004, [JSON.stringify(node.tag)]));
@@ -138,7 +137,6 @@ const transform = (function() {
   }
   function get(node, options, resume) {
     visit(node.elts[0], options, function (err1, val1) {
-      console.log("get() val1=" + JSON.stringify(val1));
       let str = "";
       if (val1 instanceof Array) {
         val1.forEach(v => {
@@ -171,20 +169,47 @@ const transform = (function() {
     });
   }
   function select(node, options, resume) {
-    console.log("query() elts[0]=" + node.elts[0] + " elts[1]=" + node.elts[1]);
-    visit(node.elts[0], options, function (err1, val1) {
-      console.log("query() elts[0]=" + node.elts[0] + " val1=" + JSON.stringify(val1));
-      if (false) {
-        err1 = err1.concat(error("Argument must be a number.", node.elts[0]));
-      }
-      console.log("query() elts[1]=" + node.elts[1]);
-      visit(node.elts[1], options, function (err2, val2) {
-        if (false) {
-          err2 = err2.concat(error("Argument must be a number.", node.elts[1]));
-        }
-        resume([].concat(err1).concat(err2), val2);
+    // select <query> <data>
+    visit(node.elts[1], options, function (err1, data) {
+      visit(node.elts[0], options, function (err0, query) {
+        let val = fn(query, data);
+        resume([].concat(err1).concat(err0), val);
       });
     });
+    function fn(query, data, d) {
+      let list = [];
+      try {
+        if (data instanceof Array) {
+          data.forEach((d, i) => {
+            list = list.concat(fn(query, d));
+          });
+        } else {
+          let qq = Object.keys(query);
+          qq.forEach((q) => {
+            if (data && data[q] !== undefined) {
+              let d = {};
+              d[q] = data[q];
+              list.push(d);
+            }
+          })
+          if (typeof data === "object") {
+            // Traverse object children.
+            Object.keys(data).forEach(k => {
+              list = list.concat(fn(query, data[k]));
+            });
+          }
+          let obj = {};
+          list.forEach((o) => {
+            obj = Object.assign(obj, o);
+          });
+          obj._data = d
+          list = [obj];
+        }
+      } catch (x) {
+        console.log(x.stack);
+      }
+      return list;
+    }
   }
   function validate(node, options, resume) {
     visit(node.elts[0], options, function (err1, val1) {
