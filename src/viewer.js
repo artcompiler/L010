@@ -136,7 +136,10 @@ window.gcexports.viewer = (function () {
     render: function () {
       let {width, height} = getWindowSize();
       return (
-        <svg width={width} height={height}></svg>
+        <div className="L010 viewer">
+          <link rel="stylesheet" href="https://l010.artcompiler.com/style.css" />
+          <svg width={width} height={height}></svg>
+        </div>
       );
     },
   });

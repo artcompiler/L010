@@ -388,7 +388,12 @@ window.gcexports.viewer = function () {
           width = _getWindowSize.width,
           height = _getWindowSize.height;
 
-      return React.createElement("svg", { width: width, height: height });
+      return React.createElement(
+        "div",
+        { className: "L010 viewer" },
+        React.createElement("link", { rel: "stylesheet", href: "https://l010.artcompiler.com/style.css" }),
+        React.createElement("svg", { width: width, height: height })
+      );
     }
   });
   return {
